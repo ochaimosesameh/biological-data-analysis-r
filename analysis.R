@@ -1,32 +1,26 @@
 # ============================================================
 # PROJECT: Biological Data Analysis and Visualisation Using R
 # AUTHOR: Ochai Moses Ameh
-# PURPOSE: Analyse illustrative biological data using R
+# PURPOSE: Analyse biological data using R
 # ============================================================
 
-# 1. Create an illustrative plant growth dataset
+# 1. Load the biological dataset
 
-plant_data <- data.frame(
-  Treatment = rep(c("Control", "Moderate Stress", "Severe Stress"),
-                  each = 5),
-  Plant_Height_cm = c(
-    25, 27, 26, 24, 28,
-    20, 22, 21, 19, 23,
-    14, 16, 15, 13, 17
-  ),
-  Chlorophyll = c(
-    42, 45, 44, 41, 46,
-    35, 38, 36, 34, 37,
-    25, 28, 26, 24, 27
-  )
-)
+# The CSV file must be in the current working directory.
+data_file <- "plant_growth.csv"
 
-# 2. Display the dataset
+if (!file.exists(data_file)) {
+  stop("Error: plant_growth.csv was not found.")
+}
+
+plant_data <- read.csv(data_file, stringsAsFactors = FALSE)
+
+# 2. Inspect the dataset
 
 cat("BIOLOGICAL DATA ANALYSIS\n")
 cat("========================\n\n")
 
-cat("First six rows of the dataset:\n")
+cat("First six rows:\n")
 print(head(plant_data))
 
 cat("\nDataset dimensions:\n")
@@ -35,46 +29,82 @@ print(dim(plant_data))
 cat("\nColumn names:\n")
 print(names(plant_data))
 
-# 3. Check for missing values
+# 3. Validate the dataset
 
-cat("\nMissing values in each column:\n")
-print(colSums(is.na(plant_data)))
+required_columns <- c(
+  "Treatment",
+  "Plant_Height_cm",
+  "Chlorophyll"
+)
+
+if (!all(required_columns %in% names(plant_data))) {
+  stop("Error: One or more required columns are missing.")
+}
+
+if (anyNA(plant_data[required_columns])) {
+  stop("Error: Missing values were found in the dataset.")
+}
+
+if (!is.numeric(plant_data$Plant_Height_cm) ||
+    !is.numeric(plant_data$Chlorophyll)) {
+  stop("Error: Measurement columns must contain numbers.")
+}
+
+if (length(unique(plant_data$Treatment)) < 2) {
+  stop("Error: At least two treatment groups are required.")
+}
+
+cat("\nData validation completed successfully.\n")
 
 # 4. Calculate descriptive statistics
 
-cat("\nPLANT HEIGHT SUMMARY BY TREATMENT\n")
-cat("=================================\n")
+cat("\nPLANT HEIGHT SUMMARY\n")
+cat("====================\n")
 
-height_mean <- aggregate(
+height_summary <- aggregate(
   Plant_Height_cm ~ Treatment,
   data = plant_data,
-  FUN = mean
+  FUN = function(x) {
+    c(
+      Mean = mean(x),
+      SD = sd(x),
+      Minimum = min(x),
+      Maximum = max(x)
+    )
+  }
 )
 
-height_sd <- aggregate(
-  Plant_Height_cm ~ Treatment,
-  data = plant_data,
-  FUN = sd
+height_summary <- do.call(
+  data.frame,
+  height_summary
 )
 
-print(height_mean)
-cat("\nStandard deviation of plant height:\n")
-print(height_sd)
+names(height_summary) <- c(
+  "Treatment",
+  "Mean_Height",
+  "SD",
+  "Minimum",
+  "Maximum"
+)
+
+print(height_summary, row.names = FALSE)
 
 # 5. Summarise chlorophyll measurements
 
-cat("\nCHLOROPHYLL SUMMARY BY TREATMENT\n")
-cat("================================\n")
+cat("\nCHLOROPHYLL SUMMARY\n")
+cat("===================\n")
 
-chlorophyll_mean <- aggregate(
+chlorophyll_summary <- aggregate(
   Chlorophyll ~ Treatment,
   data = plant_data,
   FUN = mean
 )
 
-print(chlorophyll_mean)
+names(chlorophyll_summary)[2] <- "Mean_Chlorophyll"
 
-# 6. Calculate the correlation between height and chlorophyll
+print(chlorophyll_summary, row.names = FALSE)
+
+# 6. Examine correlation
 
 cat("\nCORRELATION ANALYSIS\n")
 cat("====================\n")
@@ -84,9 +114,13 @@ correlation <- cor(
   plant_data$Chlorophyll
 )
 
-cat("Correlation coefficient:", correlation, "\n")
+cat(
+  "Correlation between plant height and chlorophyll:",
+  round(correlation, 3),
+  "\n"
+)
 
-# 7. Compare plant height among treatments using ANOVA
+# 7. Compare plant height using ANOVA
 
 cat("\nANALYSIS OF VARIANCE (ANOVA)\n")
 cat("============================\n")
@@ -96,9 +130,32 @@ anova_result <- aov(
   data = plant_data
 )
 
-print(summary(anova_result))
+anova_table <- summary(anova_result)
+print(anova_table)
 
-# 8. Create a boxplot
+p_value <- anova_table[[1]][["Pr(>F)"]][1]
+
+# 8. Interpret the ANOVA result
+
+cat("\nINTERPRETATION\n")
+cat("==============\n")
+
+if (is.na(p_value)) {
+  cat("The ANOVA p-value could not be calculated.\n")
+} else if (p_value < 0.05) {
+  cat(
+    "There is statistical evidence of a difference",
+    "in mean plant height among treatments (p < 0.05).\n"
+  )
+} else {
+  cat(
+    "There is insufficient statistical evidence of",
+    "a difference in mean plant height among treatments",
+    "at the 0.05 significance level.\n"
+  )
+}
+
+# 9. Visualise plant height
 
 boxplot(
   Plant_Height_cm ~ Treatment,
@@ -109,12 +166,9 @@ boxplot(
   col = c("lightgreen", "lightblue", "salmon")
 )
 
-# 9. Print a brief interpretation
+# 10. Final reminder
 
-cat("\nINTERPRETATION\n")
-cat("==============\n")
-cat("The dataset contains illustrative plant measurements.\n")
-cat("Compare the mean heights to examine treatment differences.\n")
-cat("Use the ANOVA p-value to assess statistical evidence\n")
-cat("of differences in mean plant height among treatments.\n")
-cat("These are demonstration data, not experimental results.\n")
+cat("\nNOTE\n")
+cat("====\n")
+cat("These are illustrative data for learning purposes.\n")
+cat("They are not actual experimental measurements.\n")
