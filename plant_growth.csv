@@ -1,0 +1,16 @@
+Treatment,Plant_Height_cm,Chlorophyll
+Control,25,42
+Control,27,45
+Control,26,44
+Control,24,41
+Control,28,46
+Moderate Stress,20,35
+Moderate Stress,22,38
+Moderate Stress,21,36
+Moderate Stress,19,34
+Moderate Stress,23,37
+Severe Stress,14,25
+Severe Stress,16,28
+Severe Stress,15,26
+Severe Stress,13,24
+Severe Stress,17,27
